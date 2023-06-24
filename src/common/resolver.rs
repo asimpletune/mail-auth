@@ -24,13 +24,13 @@ use async_std_resolver::{
     // ResolveErrorKind,
 };
 
-use trust_dns_resolver::{
-    // config::{ResolverConfig, ResolverOpts},
-    error::ResolveErrorKind,
-    // proto::rr::RecordType,
-    system_conf::read_system_conf,
-    AsyncResolver,
-};
+// use trust_dns_resolver::{
+//     // config::{ResolverConfig, ResolverOpts},
+//     error::ResolveErrorKind,
+//     // proto::rr::RecordType,
+//     system_conf::read_system_conf,
+//     AsyncResolver,
+// };
 
 use crate::{
     dkim::{Atps, DomainKeyReport},
@@ -67,10 +67,10 @@ impl Resolver {
         Self::with_capacity(ResolverConfig::quad9(), ResolverOpts::default(), 128).await
     }
 
-    pub async fn new_system_conf() -> Result<Self, ResolveError> {
-        let (config, options) = read_system_conf()?;
-        Self::with_capacity(config, options, 128).await
-    }
+    // pub async fn new_system_conf() -> Result<Self, ResolveError> {
+    //     let (config, options) = read_system_conf()?;
+    //     Self::with_capacity(config, options, 128).await
+    // }
 
     pub async fn with_capacity(
         config: ResolverConfig,
@@ -337,7 +337,7 @@ impl Resolver {
                 })
             })),
             Err(err) => {
-                if matches!(err.kind(), ResolveErrorKind::NoRecordsFound { .. }) {
+                if err.to_string().contains("no record found for") {
                     Ok(false)
                 } else {
                     Err(err.into())
@@ -399,9 +399,9 @@ impl Resolver {
 impl From<ResolveError> for Error {
     fn from(err: ResolveError) -> Self {
         match err.kind() {
-            ResolveErrorKind::NoRecordsFound { response_code, .. } => {
-                Error::DnsRecordNotFound(*response_code)
-            }
+            // ResolveErrorKind::NoRecordsFound { response_code, .. } => {
+            //     Error::DnsRecordNotFound(*response_code)
+            // }
             _ => Error::DnsError(err.to_string()),
         }
     }
