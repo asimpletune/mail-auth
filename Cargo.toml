@@ -36,7 +36,7 @@ serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 sha1 = { version = "0.10", features = ["oid"], optional = true }
 sha2 = { version = "0.10.6", features = ["oid"], optional = true }
-trust-dns-resolver = { version = "0.22.0", features = ["dns-over-rustls", "dnssec-ring"] }
+trust-dns-resolver = { version = "0.22.0", features = [], default-features=false }
 zip = "0.6.3"
 async-std-resolver = {version = "0.22.0", features=["system-config"]}
 

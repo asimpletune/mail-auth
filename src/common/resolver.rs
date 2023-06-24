@@ -14,12 +14,20 @@ use std::{
     sync::Arc,
 };
 
-use async_std_resolver::resolver as resolver2;
+use async_std_resolver::{
+    config::{ResolverConfig, ResolverOpts},
+    proto::rr::RecordType,
+    resolver as resolver2,
+    // system_conf::read_system_conf,
+    // AsyncResolver,
+    ResolveError,
+    // ResolveErrorKind,
+};
 
 use trust_dns_resolver::{
-    config::{ResolverConfig, ResolverOpts},
-    error::{ResolveError, ResolveErrorKind},
-    proto::rr::RecordType,
+    // config::{ResolverConfig, ResolverOpts},
+    error::ResolveErrorKind,
+    // proto::rr::RecordType,
     system_conf::read_system_conf,
     AsyncResolver,
 };
@@ -40,12 +48,7 @@ use super::{
 
 impl Resolver {
     pub async fn new_cloudflare_tls() -> Result<Self, ResolveError> {
-        Self::with_capacity(
-            ResolverConfig::cloudflare_tls(),
-            ResolverOpts::default(),
-            128,
-        )
-        .await
+        Self::with_capacity(ResolverConfig::cloudflare(), ResolverOpts::default(), 128).await
     }
 
     pub async fn new_cloudflare() -> Result<Self, ResolveError> {
@@ -61,7 +64,7 @@ impl Resolver {
     }
 
     pub async fn new_quad9_tls() -> Result<Self, ResolveError> {
-        Self::with_capacity(ResolverConfig::quad9_tls(), ResolverOpts::default(), 128).await
+        Self::with_capacity(ResolverConfig::quad9(), ResolverOpts::default(), 128).await
     }
 
     pub async fn new_system_conf() -> Result<Self, ResolveError> {
@@ -588,6 +591,6 @@ pub fn mock_resolve<T>(domain: &str) -> crate::Result<T> {
     } else if domain.contains("_dns_error.") {
         Error::DnsError("".to_string())
     } else {
-        Error::DnsRecordNotFound(trust_dns_resolver::proto::op::ResponseCode::NXDomain)
+        Error::DnsRecordNotFound(async_std_resolver::proto::op::ResponseCode::NXDomain)
     })
 }

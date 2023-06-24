@@ -267,13 +267,12 @@ use std::{
 };
 
 use arc::Set;
-use async_std_resolver::AsyncStdResolver;
+use async_std_resolver::{proto::op::ResponseCode, AsyncStdResolver};
 use common::{crypto::HashAlgorithm, headers::Header, lru::LruCache, verify::DomainKey};
 use dkim::{Atps, Canonicalization, DomainKeyReport};
 use dmarc::Dmarc;
 use mta_sts::{MtaSts, TlsRpt};
 use spf::{Macro, Spf};
-use trust_dns_resolver::proto::op::ResponseCode;
 
 pub mod arc;
 pub mod common;
@@ -284,7 +283,6 @@ pub mod report;
 pub mod spf;
 
 pub use flate2;
-pub use trust_dns_resolver;
 pub use zip;
 
 pub struct Resolver {
