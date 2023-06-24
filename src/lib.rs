@@ -267,12 +267,13 @@ use std::{
 };
 
 use arc::Set;
+use async_std_resolver::AsyncStdResolver;
 use common::{crypto::HashAlgorithm, headers::Header, lru::LruCache, verify::DomainKey};
 use dkim::{Atps, Canonicalization, DomainKeyReport};
 use dmarc::Dmarc;
 use mta_sts::{MtaSts, TlsRpt};
 use spf::{Macro, Spf};
-use trust_dns_resolver::{proto::op::ResponseCode, TokioAsyncResolver};
+use trust_dns_resolver::proto::op::ResponseCode;
 
 pub mod arc;
 pub mod common;
@@ -287,7 +288,8 @@ pub use trust_dns_resolver;
 pub use zip;
 
 pub struct Resolver {
-    pub(crate) resolver: TokioAsyncResolver,
+    // pub(crate) resolver: TokioAsyncResolver,
+    pub(crate) resolver2: AsyncStdResolver,
     pub(crate) cache_txt: LruCache<String, Txt>,
     pub(crate) cache_mx: LruCache<String, Arc<Vec<MX>>>,
     pub(crate) cache_ipv4: LruCache<String, Arc<Vec<Ipv4Addr>>>,

@@ -14,6 +14,8 @@ use std::{
     sync::Arc,
 };
 
+use async_std_resolver::resolver as resolver2;
+
 use trust_dns_resolver::{
     config::{ResolverConfig, ResolverOpts},
     error::{ResolveError, ResolveErrorKind},
@@ -37,51 +39,53 @@ use super::{
 };
 
 impl Resolver {
-    pub fn new_cloudflare_tls() -> Result<Self, ResolveError> {
+    pub async fn new_cloudflare_tls() -> Result<Self, ResolveError> {
         Self::with_capacity(
             ResolverConfig::cloudflare_tls(),
             ResolverOpts::default(),
             128,
         )
+        .await
     }
 
-    pub fn new_cloudflare() -> Result<Self, ResolveError> {
-        Self::with_capacity(ResolverConfig::cloudflare(), ResolverOpts::default(), 128)
+    pub async fn new_cloudflare() -> Result<Self, ResolveError> {
+        Self::with_capacity(ResolverConfig::cloudflare(), ResolverOpts::default(), 128).await
     }
 
-    pub fn new_google() -> Result<Self, ResolveError> {
-        Self::with_capacity(ResolverConfig::google(), ResolverOpts::default(), 128)
+    pub async fn new_google() -> Result<Self, ResolveError> {
+        Self::with_capacity(ResolverConfig::google(), ResolverOpts::default(), 128).await
     }
 
-    pub fn new_quad9() -> Result<Self, ResolveError> {
-        Self::with_capacity(ResolverConfig::quad9(), ResolverOpts::default(), 128)
+    pub async fn new_quad9() -> Result<Self, ResolveError> {
+        Self::with_capacity(ResolverConfig::quad9(), ResolverOpts::default(), 128).await
     }
 
-    pub fn new_quad9_tls() -> Result<Self, ResolveError> {
-        Self::with_capacity(ResolverConfig::quad9_tls(), ResolverOpts::default(), 128)
+    pub async fn new_quad9_tls() -> Result<Self, ResolveError> {
+        Self::with_capacity(ResolverConfig::quad9_tls(), ResolverOpts::default(), 128).await
     }
 
-    pub fn new_system_conf() -> Result<Self, ResolveError> {
+    pub async fn new_system_conf() -> Result<Self, ResolveError> {
         let (config, options) = read_system_conf()?;
-        Self::with_capacity(config, options, 128)
+        Self::with_capacity(config, options, 128).await
     }
 
-    pub fn with_capacity(
+    pub async fn with_capacity(
         config: ResolverConfig,
         options: ResolverOpts,
         capacity: usize,
     ) -> Result<Self, ResolveError> {
         Ok(Self {
-            resolver: AsyncResolver::tokio(config, options)?,
+            // resolver: AsyncResolver::tokio(config, options)?,
             cache_txt: LruCache::with_capacity(capacity),
             cache_mx: LruCache::with_capacity(capacity),
             cache_ipv4: LruCache::with_capacity(capacity),
             cache_ipv6: LruCache::with_capacity(capacity),
             cache_ptr: LruCache::with_capacity(capacity),
+            resolver2: resolver2(config, options).await?,
         })
     }
 
-    pub fn with_capacities(
+    pub async fn with_capacities(
         config: ResolverConfig,
         options: ResolverOpts,
         txt_capacity: usize,
@@ -91,12 +95,13 @@ impl Resolver {
         ptr_capacity: usize,
     ) -> Result<Self, ResolveError> {
         Ok(Self {
-            resolver: AsyncResolver::tokio(config, options)?,
+            // resolver: AsyncResolver::tokio(config, options)?,
             cache_txt: LruCache::with_capacity(txt_capacity),
             cache_mx: LruCache::with_capacity(mx_capacity),
             cache_ipv4: LruCache::with_capacity(ipv4_capacity),
             cache_ipv6: LruCache::with_capacity(ipv6_capacity),
             cache_ptr: LruCache::with_capacity(ptr_capacity),
+            resolver2: resolver2(config, options).await?,
         })
     }
 
@@ -114,7 +119,7 @@ impl Resolver {
             return mock_resolve(key.as_ref());
         }
 
-        let txt_lookup = self.resolver.txt_lookup(key.as_ref()).await?;
+        let txt_lookup = self.resolver2.txt_lookup(key.as_ref()).await?;
         let mut result = Err(Error::InvalidRecordType);
         let records = txt_lookup.as_lookup().record_iter().filter_map(|r| {
             let txt_data = r.data()?.as_txt()?.txt_data();
@@ -155,7 +160,7 @@ impl Resolver {
             return mock_resolve(key.as_ref());
         }
 
-        let mx_lookup = self.resolver.mx_lookup(key.as_ref()).await?;
+        let mx_lookup = self.resolver2.mx_lookup(key.as_ref()).await?;
         let mx_records = mx_lookup.as_lookup().records();
         let mut records: Vec<MX> = Vec::with_capacity(mx_records.len());
         for mx_record in mx_records {
@@ -195,7 +200,7 @@ impl Resolver {
             return mock_resolve(key.as_ref());
         }
 
-        let ipv4_lookup = self.resolver.ipv4_lookup(key.as_ref()).await?;
+        let ipv4_lookup = self.resolver2.ipv4_lookup(key.as_ref()).await?;
         let ips = ipv4_lookup
             .as_lookup()
             .record_iter()
@@ -221,7 +226,7 @@ impl Resolver {
             return mock_resolve(key.as_ref());
         }
 
-        let ipv6_lookup = self.resolver.ipv6_lookup(key.as_ref()).await?;
+        let ipv6_lookup = self.resolver2.ipv6_lookup(key.as_ref()).await?;
         let ips = ipv6_lookup
             .as_lookup()
             .record_iter()
@@ -287,7 +292,7 @@ impl Resolver {
             return mock_resolve(&addr.to_string());
         }
 
-        let ptr_lookup = self.resolver.reverse_lookup(addr).await?;
+        let ptr_lookup = self.resolver2.reverse_lookup(addr).await?;
         let ptr = ptr_lookup
             .as_lookup()
             .record_iter()
@@ -322,7 +327,7 @@ impl Resolver {
         }
 
         let key = key.into_fqdn();
-        match self.resolver.lookup_ip(key.as_ref()).await {
+        match self.resolver2.lookup_ip(key.as_ref()).await {
             Ok(result) => Ok(result.as_lookup().record_iter().any(|r| {
                 r.data().map_or(false, |d| {
                     matches!(d.to_record_type(), RecordType::A | RecordType::AAAA)
